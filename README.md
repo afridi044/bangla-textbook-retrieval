@@ -1,62 +1,123 @@
 # A Controlled Study of Bangla Biology Textbook Retrieval
-## Diagnosing Unit Design, Dense Supervision, and Hybrid Fusion
 
-This repository contains the code, preprocessing pipeline, and evaluation scripts for a controlled study of **structure-aware retrieval for Bangla biology textbooks**. The project studies retrieval as a core component for Bangla educational QA and teacher-support systems, focusing on how **retrieval-unit design**, **dense supervision**, and **sparse-dense fusion** affect evidence retrieval over structured textbook content.
+<p align="center">
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.10%2B-blue">
+  <img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-Retrieval-red">
+  <img alt="Task" src="https://img.shields.io/badge/Task-Textbook%20Retrieval-green">
+  <img alt="Language" src="https://img.shields.io/badge/Language-Bangla-orange">
+  <img alt="Status" src="https://img.shields.io/badge/Status-Research%20Code-lightgrey">
+</p>
 
-Unlike open-domain retrieval, textbook evidence follows chapter hierarchy, pedagogical boundaries, and curriculum-aligned organization. This repository provides a reproducible workflow for building hierarchy-derived retrieval nodes, training dense retrievers, running controlled ablations, comparing chunking strategies, and generating publication-ready result summaries.
+This repository contains the code, preprocessing pipeline, benchmark assets, and evaluation scripts for the paper:
 
----
+> **A Controlled Study of Bangla Biology Textbook Retrieval: Diagnosing Unit Design, Dense Supervision, and Hybrid Fusion**
 
-## Overview
+The project studies **structure-aware retrieval for Bangla biology textbooks** and asks a focused question: how much retrieval quality depends on **retrieval-unit design**, **dense supervision**, and **sparse-dense hybrid fusion** in an educational setting.
 
-The benchmark is built from **3 Bangla biology chapters**, **166 hierarchy-derived retrieval nodes**, and **1,320 question-node pairs**. The task is **single-positive retrieval**: for each question, rank all nodes so that the gold supporting node appears as high as possible.
-
-The main experimental components in this repository are:
-
-- **Hierarchy-derived node construction** from textbook chapter structure
-- **BM25 lexical retrieval** over Bangla text
-- **Dense retrieval** with `intfloat/multilingual-e5-base`
-- **Hard-negative mining and refresh** during dense training
-- **Hybrid fusion** using **RRF** and **MinMax**
-- **Chunking baselines** with word, character, and sentence units
-- **Multi-seed node-disjoint evaluation** and result aggregation
+Unlike open-domain retrieval, textbook evidence is organized by **chapter hierarchy, pedagogical boundaries, and curriculum structure**. This repository is designed as a **paper repo**: it reproduces the benchmark construction pipeline, the controlled ablation ladder, the chunking study, and the result aggregation used in the paper.
 
 ---
 
-## Benchmark at a Glance
+## Abstract
+
+Reliable retrieval of textbook evidence is a core requirement for Bangla study assistants and teacher-support tools. We introduce a reproducible benchmark for structure-aware retrieval in Bangla textbooks, built from **3 biology chapters**, **166 hierarchy-derived nodes**, and **1,320 question-node pairs**, with **node-disjoint train/validation/test splits** across three seeds. Under a controlled evaluation protocol, we compare **BM25**, **multilingual-E5 dense retrieval**, **hard-negative refresh**, **sparse-dense fusion**, and **hierarchy-preserving versus flat chunk units**. The main findings are that **BM25 remains strong at early ranks**, **dense retrieval improves deeper recall**, and **hybrid fusion performs best overall**. The best reported system, **A5 with MinMax fusion**, reaches **0.7460 MRR** and **0.9233 Recall@20**.
+
+---
+
+## Experimental Pipeline
+
+<p align="center">
+  <img src="assets/pipeline.png" alt="Bangla Biology Retrieval Benchmark experimental pipeline" width="100%">
+</p>
+
+The pipeline follows six stages: **dataset construction**, **question generation**, **data splitting**, **retrieval systems**, **ablation and chunking analysis**, and **evaluation**. The uploaded figure already matches the paper workflow and is ready to use in the repository.
+
+---
+
+## Benchmark Summary
 
 - **Domain:** Bangla biology textbooks
+- **Source book:** HSC Biology 1st Paper
 - **Chapters:** 3
 - **Retrieval nodes:** 166
 - **Question-node pairs:** 1,320
-- **Split protocol:** node-disjoint train/validation/test
+- **Task:** single-positive retrieval
+- **Split protocol:** node-disjoint train / validation / test
+- **Split ratio:** 75% / 10% / 15%
 - **Seeds:** 42, 43, 44
-- **Evaluation focus:** MRR, Recall@K, NDCG@10, Mean Rank
+- **Metrics:** MRR, Recall@{1,3,5,10,20}, NDCG@10, mean rank, median rank
 
-### Included textbook chapters
+Covered chapters:
 
-- **Algae and Fungi**
-- **Bryophyta and Pteridophyta**
-- **Gymnosperms and Angiosperms**
+1. **Algae and Fungi**
+2. **Bryophyta and Pteridophyta**
+3. **Gymnosperms and Angiosperms**
+
+Questions are manually authored in Bangla and linked to a gold supporting node using a **most-specific support** principle.
 
 ---
 
-## Main Experimental Design
+## Main Contributions of This Repository
 
-The repository supports the controlled ablation ladder described in the paper:
+- Reproducible **hierarchy-derived node construction** from textbook markdown
+- **Unicode-aware BM25** retrieval over Bangla content
+- **Dense bi-encoder retrieval** with `intfloat/multilingual-e5-base`
+- **Hard-negative mining and refresh** during training
+- **Hybrid reranking/fusion** with **RRF** and **MinMax**
+- Controlled **A0–A5 ablation ladder**
+- Flat **chunking baselines** for word, sentence, and character units
+- Multi-seed result aggregation for paper-style reporting
 
-- **A0:** BM25
-- **A1:** Dense retrieval
-- **A2:** Dense + RRF fusion
-- **A3:** A2 + hard-negative refresh
-- **A4:** A3 + checkpoint selection by hybrid validation MRR
-- **A5:** A3 + MinMax fusion
+---
 
-It also supports the **chunking study**, where hierarchy-preserving nodes are compared against flat chunk alternatives:
+## Controlled Ablation Ladder
+
+The main paper experiments follow this progression:
+
+- **A0** — BM25
+- **A1** — Dense retrieval
+- **A2** — A1 + hybrid fusion
+- **A3** — A2 + hard-negative refresh
+- **A4** — A3 + hybrid-MRR checkpoint selection
+- **A5** — A3 + MinMax fusion
+
+The paper reports that **A5** is the strongest configuration in the main ablation ladder.
+
+### Main ablation takeaway
+
+- **BM25** is a strong lexical anchor when retrieval units preserve textbook boundaries.
+- **Dense retrieval** improves deeper recall but does not beat BM25 on early-rank precision by itself.
+- **Hybrid fusion** provides the best overall balance for textbook-grounded Bangla retrieval.
+
+---
+
+## Best Reported Systems
+
+| System | Family | MRR | R@1 | R@20 | NDCG@10 |
+|---|---|---:|---:|---:|---:|
+| BM25 (A0) | Sparse | 0.6545 | 0.5525 | 0.8831 | 0.6964 |
+| C0-w128 DenseFT | Dense | 0.6801 | 0.5600 | 0.9334 | 0.7284 |
+| A5 MinMax | Hybrid | **0.7460** | **0.6652** | 0.9233 | **0.7747** |
+
+These are the strongest sparse, dense, and hybrid systems reported in the paper. The best hybrid model improves Recall@1 over BM25 by **+0.1127**, which the paper interprets as roughly **11 additional top-ranked supporting nodes per 100 learner questions**.
+
+---
+
+## Chunking Study
+
+The repository also reproduces the chunking analysis comparing hierarchy-preserving nodes with flat chunk alternatives.
+
+Supported chunk variants include:
 
 - **Word chunks:** 128, 256, 512
 - **Character chunks:** 500, 1000
 - **Sentence chunks**
+
+The main paper finding is that retrieval-unit effects are **model-dependent**:
+
+- hierarchy-preserving units are strong for **BM25**
+- dense retrieval is more sensitive to **chunk granularity** and **task-aligned supervision**
+- the best flat dense system is **C0-w128 DenseFT**
 
 ---
 
@@ -82,53 +143,25 @@ It also supports the **chunking study**, where hierarchy-preserving nodes are co
     └── chunkingAb.json
 ```
 
-### Directory details
+### `Processing/`
+Parses textbook markdown chapters into hierarchical JSON trees.
 
-#### `Processing/`
-Utilities for converting textbook markdown chapters into hierarchical JSON trees.
-
-- `parse_md.py`: parses markdown headings and content into nested JSON
-- `*.md`: source chapter files
-- `*.json`: parsed chapter trees
-
-#### `DatasetPrep/`
+### `DatasetPrep/`
 Builds the hierarchy-derived retrieval corpus used by the benchmark.
 
-- `prepare_nodes.py`: flattens chapter JSON into retrieval-ready node documents
-- `qa_Gold.csv`: question to gold-node mapping
-- `nodes.csv`: tabular retrieval corpus
-- `nodes.jsonl`: JSONL version of the corpus
+### `training/`
+Contains the main ablation pipeline and chunking-study experiments.
 
-Expected columns in `nodes.csv`:
-
-- `node_id`
-- `chapter_id`
-- `source_file`
-- `level`
-- `heading`
-- `heading_path`
-- `content`
-
-#### `training/`
-Training and evaluation scripts for the main ablation ladder and chunking baselines.
-
-- `train_retriever.py`: multi-seed controlled ablation pipeline
-- `chunkingAb.py`: flat-chunk comparison experiments
-
-#### `results/`
-Utilities for aggregating run outputs into paper-style summary tables.
-
-- `table.py`: prints formatted comparison tables from summary JSON files
-- `stat.json`: main ablation summary input
-- `chunkingAb.json`: chunking-study summary input
+### `results/`
+Aggregates run outputs into paper-style summary tables.
 
 ---
 
-## Environment Setup
+## Setup
 
-Use **Python 3.10+** (3.11 recommended).
+Use **Python 3.10+**.
 
-### 1. Create and activate a virtual environment
+### Create and activate a virtual environment
 
 ```powershell
 python -m venv .venv
@@ -136,7 +169,7 @@ python -m venv .venv
 python -m pip install --upgrade pip
 ```
 
-### 2. Install dependencies
+### Install dependencies
 
 ```powershell
 pip install -r DatasetPrep\requirements.txt
@@ -147,9 +180,7 @@ pip install -r training\requirements.txt
 
 ## Data Preparation
 
-### Step 1. Parse textbook markdown into hierarchical JSON
-
-Run once for each source chapter:
+### 1. Parse textbook markdown into hierarchical JSON
 
 ```powershell
 python Processing\parse_md.py Processing\BrTr.md --json-out Processing\BrTr.json
@@ -157,147 +188,118 @@ python Processing\parse_md.py Processing\AlFng.md --json-out Processing\AlFng.js
 python Processing\parse_md.py Processing\GymAng.md --json-out Processing\GymAng.json
 ```
 
-If the parsed JSON files already exist, this step can be skipped.
-
-### Step 2. Build hierarchy-derived retrieval nodes
-
-Place the chapter JSON files in `DatasetPrep/` and run:
+### 2. Build hierarchy-derived retrieval nodes
 
 ```powershell
 python DatasetPrep\prepare_nodes.py
 ```
 
-This generates:
+This step generates:
 
 - `DatasetPrep/nodes.csv`
 - `DatasetPrep/nodes.jsonl`
 
-The preparation pipeline preserves:
+Expected fields in `nodes.csv`:
 
-- node IDs
-- hierarchy level
-- heading path
-- chapter ID
-- node text/content
-
-The resulting node representation keeps retrieval units aligned with textbook structure instead of applying fixed-length chunking by default.
+- `node_id`
+- `chapter_id`
+- `source_file`
+- `level`
+- `heading`
+- `heading_path`
+- `content`
 
 ---
 
-## Running the Main Ablation Experiments
+## Running the Main Experiments
 
-The main training script uses project-relative defaults inside its config:
-
-- `nodes_csv = "DatasetPrep/nodes.csv"`
-- `qa_gold_csv = "DatasetPrep/qa_Gold.csv"`
-- `output_root = "results/trained_retriever"`
-- `stat_json_path = ""` → auto-defaults to `results/stat.json`
-
-Run from the repository root:
+From the repository root:
 
 ```powershell
 python training\train_retriever.py
 ```
 
-### What this script runs
+This script runs the controlled **A0–A5** benchmark using the project-relative defaults already described in the codebase.
 
-- controlled ablation suite **A0–A5**
-- node-disjoint train/validation/test splitting
-- multi-seed evaluation with seeds **42, 43, 44**
-- dense bi-encoder training and hybrid retrieval evaluation
-- per-run result saving and global result summarization
-- automatic export of `results/stat.json`
+### What it does
+
+- builds node-disjoint splits
+- trains dense bi-encoder variants
+- evaluates BM25, dense, and hybrid systems
+- saves per-run outputs
+- writes a global summary to `results/stat.json`
 
 ---
 
 ## Running the Chunking Study
 
-The chunking baseline script uses local defaults such as:
-
-- `NODES_CSV = "DatasetPrep/nodes.csv"`
-- `QA_GOLD_CSV = "DatasetPrep/qa_Gold.csv"`
-- `OUTPUT_DIR = "results"`
-- `CHUNKING_JSON_PATH = ""` → auto-defaults to `results/chunkingAb.json`
-
-Run:
-
 ```powershell
 python training\chunkingAb.py
 ```
 
-### Outputs
+Outputs include:
 
 - `chunk_baseline_results_<timestamp>.json`
 - `chunk_baseline_summary_<timestamp>.txt`
 - `results/chunkingAb.json`
 
-This script compares hierarchy-preserving nodes against flat chunk alternatives for:
+This script compares hierarchy-preserving nodes against flat chunk alternatives under:
 
 - **BM25**
-- **DenseZS** (zero-shot multilingual-E5)
-- **DenseFT** (fine-tuned dense retrieval)
+- **DenseZS**
+- **DenseFT**
 
 ---
 
-## Result Aggregation
-
-To generate paper-style summary tables, run:
+## Generating Paper Tables
 
 ```powershell
 python results\table.py
 ```
 
-This script reads:
+This reads:
 
 - `results/stat.json`
 - `results/chunkingAb.json`
 
-and prints formatted comparison tables for the main ablations and chunking experiments.
+and prints formatted comparison tables suitable for reporting and verification.
 
 ---
 
-## Recommended End-to-End Order
+## Recommended Reproduction Order
 
-1. Parse textbook markdown into chapter JSON
-2. Build retrieval nodes with `DatasetPrep/prepare_nodes.py`
-3. Verify that `qa_Gold.csv` matches valid `positive_node_id` values in `nodes.csv`
-4. Run `training/train_retriever.py`
-5. Run `training/chunkingAb.py`
-6. Run `results/table.py`
+1. Parse markdown chapters into JSON.
+2. Build retrieval nodes with `DatasetPrep/prepare_nodes.py`.
+3. Verify that `qa_Gold.csv` maps to valid node IDs in `nodes.csv`.
+4. Run `training/train_retriever.py`.
+5. Run `training/chunkingAb.py`.
+6. Run `results/table.py`.
 
 ---
 
 ## Reproducibility Notes
 
-For reproducible runs, keep track of:
+For clean experimental reporting, keep track of:
 
-- exact script version / commit hash
+- commit hash
 - seed set
-- final config values
+- config values
 - generated summary JSON files
-- printed table outputs
+- printed comparison tables
 
-Additional implementation notes:
+Additional notes:
 
-- GPU is recommended for dense training
-- CPU-only runs are possible but significantly slower
-- `train_retriever.py` and `chunkingAb.py` execute immediately because they call `run()` at file end
-- `train_retriever.py` validates that all `positive_node_id` entries in `qa_Gold.csv` exist in `nodes.csv`
-- `prepare_nodes.py` uses deterministic chapter ordering
+- GPU is recommended for dense training.
+- CPU-only execution is possible but slower.
+- `train_retriever.py` and `chunkingAb.py` execute immediately because they call `run()` at file end.
+- `train_retriever.py` checks whether all gold node IDs exist in `nodes.csv`.
+- `prepare_nodes.py` preserves deterministic chapter processing order.
 
 ---
 
-## Summary of Findings
+## Limitations
 
-The paper’s main takeaways, which this repository is designed to reproduce, are:
-
-- **BM25 remains strong at early ranks**
-- **Dense retrieval improves deeper recall**
-- **Hybrid fusion performs best overall**
-- **Hierarchy-aware units favor lexical retrieval**
-- **Dense retrieval is more sensitive to chunk granularity and supervision**
-
-The best reported configuration in the paper is **A5 with MinMax fusion**, which reaches **0.746 MRR** and **0.923 Recall@20** under the reported benchmark setting.
+This benchmark is intentionally compact and should be read as a **controlled educational retrieval benchmark**, not a large-scale production retrieval benchmark. The paper explicitly notes that the corpus size is small and that hybrid evaluation in this setting is close to **near-exhaustive reranking** rather than scalable first-stage retrieval.
 
 ---
 
@@ -316,6 +318,6 @@ If you use this repository, please cite the accompanying paper.
 
 ---
 
-## A Note on Review Anonymity
+## Review Anonymity
 
-If this repository is being used during double-blind review, avoid adding author names, institutional details, or identifying links until the review period is over.
+If the paper is still under double-blind review, avoid adding author names, affiliations, lab names, institution-specific links, or identifying acknowledgments until the review period is over.
